@@ -11,8 +11,13 @@ class Writer;
 class ByteStream
 {
 protected:
-  uint64_t capacity_;
+  uint64_t _capacity;
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
+  std::queue<char> _buf;  // 使用 队列作为 流缓冲区，满足 先进先出
+  bool _isError;  
+  bool _isClosed;
+  size_t _pushedBytes;  // push 的总字节数
+  size_t _popedBytes;  // pop 的总字节数
 
 public:
   explicit ByteStream( uint64_t capacity );
