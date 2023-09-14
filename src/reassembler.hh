@@ -4,8 +4,17 @@
 
 #include <string>
 
+#include <deque>
+
 class Reassembler
 {
+private:
+  uint64_t first_unassembled_index_;
+  uint64_t first_unacceptable_index_;
+  std::deque<char> reassemblerBuf_;  // 存储提前到达的字串
+  std::deque<char> flagBuf_;  // 字符是否有效
+  uint64_t endIndex_;  // 整个流的最后一个字符索引
+  bool init_flag_;  // 初始值标记
 public:
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -31,4 +40,7 @@ public:
 
   // How many bytes are stored in the Reassembler itself?
   uint64_t bytes_pending() const;
+
+  Reassembler();
+
 };
