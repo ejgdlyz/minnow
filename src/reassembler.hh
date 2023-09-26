@@ -5,17 +5,25 @@
 #include <string>
 
 #include <deque>
+#include <list>
 
 class Reassembler
 {
 private:
   uint64_t first_unassembled_index_;
-  uint64_t first_unacceptable_index_;
-  std::deque<char> reassemblerBuf_;  // 存储提前到达的字串
-  std::deque<char> flagBuf_;  // 字符是否有效
-  uint64_t endIndex_;  // 整个流的最后一个字符索引
-  bool init_flag_;  // 初始值标记
+  
+  std::list<std::pair<uint64_t, std::string>> buffer_;
+  uint64_t buffer_size_;
+  bool has_last_;
 public:
+  Reassembler();
+
+  // 缓存未重组的字符
+  void insert_into_buffer(uint64_t first_index, std::string&& data, bool is_last_substring);
+
+  // pop 无效的字节 和 插入有效字节进 writer
+  void pop_from_buffer(Writer& output);
+
   /*
    * Insert a new substring to be reassembled into a ByteStream.
    *   `first_index`: the index of the first byte of the substring
@@ -40,7 +48,4 @@ public:
 
   // How many bytes are stored in the Reassembler itself?
   uint64_t bytes_pending() const;
-
-  Reassembler();
-
 };

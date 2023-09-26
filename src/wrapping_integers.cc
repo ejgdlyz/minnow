@@ -7,8 +7,8 @@ Wrap32 Wrap32::wrap( uint64_t n, Wrap32 zero_point )
 {
   // Your code here.
   // 这里取模与截断等效，因为 模为进制数的倍数， 截断 n 的前 32 位 等价于 % 2^32 
-  (void)n;
-  (void)zero_point;
+  // (void)n;
+  // (void)zero_point;
   return Wrap32 {zero_point + static_cast<uint32_t>(n)};
 }
 

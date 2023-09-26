@@ -100,11 +100,12 @@ void do_test_2( const TCPConfig& cfg, default_random_engine& rd )
 
 int main()
 {
+  
   try {
     TCPConfig cfg {};
     cfg.recv_capacity = 65000;
     auto rd = get_random_engine();
-
+    
     // non-overlapping out-of-order segments
     for ( unsigned rep_no = 0; rep_no < NREPS; ++rep_no ) {
       do_test_1( cfg, rd );
@@ -114,6 +115,7 @@ int main()
     for ( unsigned rep_no = 0; rep_no < NREPS; ++rep_no ) {
       do_test_2( cfg, rd );
     }
+
   } catch ( const exception& e ) {
     cerr << e.what() << endl;
     return 1;
