@@ -3,11 +3,27 @@
 #include "byte_stream.hh"
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
+#include "Timer.hh"
 
 class TCPSender
 {
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
+
+  bool syn_ {false};
+  bool fin_ {false};
+  unsigned retransmit_cnt_ {0};  // 连续重传次数
+
+
+  uint64_t acked_seqno_ {0};
+  uint64_t next_seqno_ {0};
+  uint64_t window_size_ {1};  // 窗口大小初始化为 1
+
+  uint64_t outstanding_cnt_ {0};  // 已发送但未完成的字节数
+  std::queue<TCPSenderMessage> outstanding_segments_ {};  // 已发送但未完成的段
+  std::queue<TCPSenderMessage> queued_segments_ {};  // 记录已经准备好发送的段
+
+  Timer timer_ {initial_RTO_ms_};
 
 public:
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */
