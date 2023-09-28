@@ -80,30 +80,30 @@ TCPSender 负责查看其未完成的 TCPSenderMessage 集合，并确定最旧�
 TCP 发送方的基本思想：给定一个要传出的字节流，将其分割为段，将它们发送到接收方。如果它们没有很快得到确认，则继续重发。
 
 以下是 TCPSender 提供的具体接口。它需要处理 5 个重要事件:
-    1. void push( Reader& outbound stream );
-    TCPSender被要求从传出的字节流中填充窗口：它从流中读取并生成尽可能多的 TCPSenderMessages，只要有新的字节需要读取并且窗口中有可用空间。
+1. void push( Reader& outbound stream );
+TCPSender被要求从传出的字节流中填充窗口：它从流中读取并生成尽可能多的 TCPSenderMessages，只要有新的字节需要读取并且窗口中有可用空间。
 
-    您需要确保发送的每个 TCPSenderMessage 完全适应接收方的窗口。将每个单独的消息尽可能大，但不超过 TCPConfig::MAX PAYLOAD SIZE（1452字节）的值。
+您需要确保发送的每个 TCPSenderMessage 完全适应接收方的窗口。将每个单独的消息尽可能大，但不超过 TCPConfig::MAX PAYLOAD SIZE（1452字节）的值。
 
-    您可以使用 TCPSenderMessage::sequence_length() 方法来计算一个片段占用的总序列号数量。请记住，SYN 和 FIN 标志也各自占用一个序列号，这意味着它们在窗口中占用空间。
+您可以使用 TCPSenderMessage::sequence_length() 方法来计算一个片段占用的总序列号数量。请记住，SYN 和 FIN 标志也各自占用一个序列号，这意味着它们在窗口中占用空间。
 
-    如果窗口大小为零，我应该怎么办？
-    如果接收方宣告窗口大小为零，push 方法应该假装窗口大小为 1。发送方可能会发送一个被接收方拒绝（并且未被确认）的单个字节，但这也可能促使接收方发送一个新的确认段，其中它揭示了窗口中有更多空间。如果没有这个处理，发送方将永远不会知道它可以开始重新发送。
-    这是你的实现在窗口大小为零的特殊情况下应该具备的唯一特殊行为。TCPSender 实际上不应该记住一个虚假的窗口大小为 1。这个特殊情况只存在于 push 方法中。此外，请注意，即使窗口大小为 1，窗口仍然可能是满的。
+如果窗口大小为零，我应该怎么办？
+如果接收方宣告窗口大小为零，push 方法应该假装窗口大小为 1。发送方可能会发送一个被接收方拒绝（并且未被确认）的单个字节，但这也可能促使接收方发送一个新的确认段，其中它揭示了窗口中有更多空间。如果没有这个处理，发送方将永远不会知道它可以开始重新发送。
+这是你的实现在窗口大小为零的特殊情况下应该具备的唯一特殊行为。TCPSender 实际上不应该记住一个虚假的窗口大小为 1。这个特殊情况只存在于 push 方法中。此外，请注意，即使窗口大小为 1，窗口仍然可能是满的。
 
-    2. std::optional<TCPSenderMessage> maybe_send();
-    如果 TCPSender 想要的话，这是实际发送 TCPSenderMessage 的机会
-    注1：当发送包含数据的段时，保留其副本，以备可能的重新传输。TCPSenderMessage 的有效载荷被存储为只读字符串的引用（一个 Buffer 对象），因此并不会复制一份数据，而只是复制一个引用，不会浪费空间。
-    注2：重传时，不需要合并序号相连的不同段，一个一个发即可。
+2. std::optional<TCPSenderMessage> maybe_send();
+如果 TCPSender 想要的话，这是实际发送 TCPSenderMessage 的机会
+注1：当发送包含数据的段时，保留其副本，以备可能的重新传输。TCPSenderMessage 的有效载荷被存储为只读字符串的引用（一个 Buffer 对象），因此并不会复制一份数据，而只是复制一个引用，不会浪费空间。
+注2：重传时，不需要合并序号相连的不同段，一个一个发即可。
 
-    3. void receive( const TCPReceiverMessage& msg ); 
-    从接收方收到一条消息，得到左边缘(=ackno) 和 右边缘 (ackno + window_size)。TCPSender 应该查看其未完成的段集合，并删除任何现在已完全确认的段，（ackno 大于 段中所有序列号）
-    注1：在接收方通知 TCPSender 之前，应该假设接收器的窗口大小为 1.
-    注2：确认号在某一段的中间时，视为未完成。只有当确认号越过整个未完成段时，才被视为已完成并从集合中删除其副本。
+3. void receive( const TCPReceiverMessage& msg ); 
+从接收方收到一条消息，得到左边缘(=ackno) 和 右边缘 (ackno + window_size)。TCPSender 应该查看其未完成的段集合，并删除任何现在已完全确认的段，（ackno 大于 段中所有序列号）
+注1：在接收方通知 TCPSender 之前，应该假设接收器的窗口大小为 1.
+注2：确认号在某一段的中间时，视为未完成。只有当确认号越过整个未完成段时，才被视为已完成并从集合中删除其副本。
 
-    4. void tick( const size t ms since last tick );
-    自上次调用此方法以来已经过了一定的毫秒数。发送器可能需要重新发送未完成的段。
+4. void tick( const size t ms since last tick );
+自上次调用此方法以来已经过了一定的毫秒数。发送器可能需要重新发送未完成的段。
 
-    5. void send_empty_message();
-    TCPSender 应该生成并发送一个长度为零的消息，并正确设置序列号。如果对等方希望发送一个 TCPReceiverMessage（例如，因为它需要确认 对等的发送方的某些内容），并且需要生成一个与之相配的 TCPSenderMessage，那么这将非常有用。
-    注意：像这样不占用序列号的段不需要被跟踪为“未完成”，并且永远不会被重新传输。
+5. void send_empty_message();
+TCPSender 应该生成并发送一个长度为零的消息，并正确设置序列号。如果对等方希望发送一个 TCPReceiverMessage（例如，因为它需要确认 对等的发送方的某些内容），并且需要生成一个与之相配的 TCPSenderMessage，那么这将非常有用。
+注意：像这样不占用序列号的段不需要被跟踪为“未完成”，并且永远不会被重新传输。

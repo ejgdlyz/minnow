@@ -41,6 +41,14 @@ private:
   // IP (known as Internet-layer or network-layer) address of the interface
   Address ip_address_;
 
+  std::unordered_map<uint32_t, std::pair<EthernetAddress, size_t>> ip2ether_ {};  // {"ip地址" : <以太网地址, 时间>}
+
+  std::unordered_map<uint32_t, size_t> arp_timer_ {};  // 保存已发送的 arp 帧对应的 ip 和时间，避免重发
+ 
+  std::unordered_map<size_t, std::vector<InternetDatagram>> waited_dgrams_ {};  // 排队的 IP 数据报和它对应的下一跳 ip 地址
+
+  std::queue<EthernetFrame> out_frames_ {};  // 待发送的以太网帧
+
 public:
   // Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer)
   // addresses
