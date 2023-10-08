@@ -47,21 +47,22 @@ cmake --build build
 
 1. ```void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Address &next hop);```
 当调用者（例如你的 TCPConnection 或路由器）希望将出站的Internet（IP）数据报发送到下一跳时，将调用此方法。你的网络接口的任务是将这个数据报转换成以太网帧，并最终发送出去。
-- 如果目标以太网地址已知，则立即发送。创建一个以太网帧，类型设置为 EthernetHeader::TYPE_IPv4。将序列化的数据报设置为有效载荷，并设置源地址和目标地址。
-- 如果目标以太网地址未知，则广播一个用于获取下一跳以太网地址的ARP请求，并将 IP 数据报排队，以便在收到 ARP 回复后发送。
-- 但是，我们不希望用 ARP 请求淹没网络。如果网络接口在过去的五秒内已经发送过关于相同IP地址的ARP请求，请不要发送第二个请求，只需等待第一个请求的回复。同样，将数据报排队，直到获取到目标以太网地址为止。
+   - 如果目标以太网地址已知，则立即发送。创建一个以太网帧，类型设置为 EthernetHeader::TYPE_IPv4。将序列化的数据报设置为有效载荷，并设置源地址和目标地址。
+   - 如果目标以太网地址未知，则广播一个用于获取下一跳以太网地址的ARP请求，并将 IP 数据报排队，以便在收到 ARP 回复后发送。
+   - 但是，我们不希望用 ARP 请求淹没网络。如果网络接口在过去的五秒内已经发送过关于相同IP地址的ARP请求，请不要发送第二个请求，只需等待第一个请求的回复。同样，将数据报排队，直到获取到目标以太网地址为止。
 
-2. ```optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &frame);```
+1. ```optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &frame);```
 当从网络接收到一个以太网帧时，将调用此方法。代码应该忽略任何不针对网络接口的帧（这意味着以太网目的地是广播地址或存储在 _ethernet_address 成员变量中的接口自己的以太网地址）。
-- 如果传入的帧是 IPv4，将有效载荷解析为 InternetDatagram，如果解析成功（即 parse() 方法返回 true），将生成的 InternetDatagram 返回给调用者。
-- 如果传入的帧是 ARP，将有效载荷解析为 ARPMessage，如果解析成功，记住发送方的 IP 地址和以太网地址之间的映射关系，保存 30 秒钟（无论是请求还是回复都要学习映射关系）。此外，如果是一个请求我们 IP 地址的 ARP 请求，发送一个适当的 ARP 回复。
+   - 如果传入的帧是 IPv4，将有效载荷解析为 InternetDatagram，如果解析成功（即 parse() 方法返回 true），将生成的 InternetDatagram 返回给调用者。
+   - 如果传入的帧是 ARP，将有效载荷解析为 ARPMessage，如果解析成功，记住发送方的 IP 地址和以太网地址之间的映射关系，保存 30 秒钟（无论是请求还是回复都要学习映射关系）。此外，如果是一个请求我们 IP 地址的 ARP 请求，发送一个适当的 ARP 回复。
 
-3. std::optional<EthernetFrame> maybe_send(); 
+1. std::optional<EthernetFrame> maybe_send(); 
 如果需要的话，这是 NetworkInterface 实际发送以太网帧的机会。
 
-4. void NetworkInterface::tick(const size_t ms_since_last_tick);
+1. void NetworkInterface::tick(const size_t ms_since_last_tick);
 时间推移方法。随着时间的推移，IP到以太网的映射会逐渐过期。
 
+# 测试
 ```git
 cmake --build build --target check4
 ```
